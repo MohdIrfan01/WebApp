@@ -1,1 +1,5 @@
+Theory
+Broken access control vulnerabilities exist when a user can access resources or perform actions that they are not supposed to be able to.
+
+Admin URLs in robots.txt
 

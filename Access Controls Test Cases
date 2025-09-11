@@ -1,5 +1,18 @@
 Theory
 Broken access control vulnerabilities exist when a user can access resources or perform actions that they are not supposed to be able to.
 
-Admin URLs in robots.txt
+1. Admin URLs in robots.txt
 
+2. Senstitive Functionality is concealed by giving it a less predective URL such as administrator-panel-yb556
+The URL might be disclosed in JavaScript that constructs the user interface based on the user's role.
+3. Parameter based access control methods
+Some applications determine the user access rights or roles at login, and then store this information in a user controllable location. 
+This could be 
+->A hidden field, 
+->A cookie, 
+->A preset query string parameter
+The application makes access control decisions based on the submitted value. For example
+https://insecure-website.com/login/home.jsp?admin=true
+https://insecure-website.com/login/home.jsp?role=1
+
+This approach is insecure becauses user can modify the value and access functionlaity they are not authorized to.

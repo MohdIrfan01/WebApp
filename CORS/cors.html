@@ -1,1 +1,21 @@
 
+# python3 collector.py
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from datetime import datetime
+import json
+LOG="collected.log"
+class H(BaseHTTPRequestHandler):
+    def do_POST(self):
+        if self.path!="/collect": self.send_response(404); self.end_headers(); return
+        l=int(self.headers.get('Content-Length',0)); raw=self.rfile.read(l).decode('utf-8','replace')
+        try: body=json.loads(raw)
+        except: body=raw
+        entry={"ts":datetime.utcnow().isoformat()+"Z","ip":self.client_address[0],"headers":dict(self.headers),"body":body}
+        print(json.dumps(entry,indent=2))
+        with open(LOG,"a") as f: f.write(json.dumps(entry)+"\n")
+        self.send_response(204); self.end_headers()
+
+if __name__=="__main__":
+    open(LOG,"a").close()
+    print("Collector running on http://0.0.0.0:5000/collect")
+    HTTPServer(("0.0.0.0",5000),H).serve_forever()

